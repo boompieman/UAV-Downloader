@@ -2247,22 +2247,26 @@ class SmallToolApp(ctk.CTk):
             if quality is None else str(quality or '').strip().lower())
         return {
             'auto': T('recognition_quality_auto'),
+            'parakeet': T('recognition_quality_parakeet'),
             'quality': T('recognition_quality_quality'),
             'balanced': T('recognition_quality_balanced'),
             'fast': T('recognition_quality_fast'),
         }.get(quality, T('recognition_quality_auto'))
 
     def _recognition_quality_values(self) -> list[str]:
-        return [
+        values = [
             T('recognition_quality_auto'),
+            T('recognition_quality_parakeet'),
             T('recognition_quality_quality'),
             T('recognition_quality_balanced'),
             T('recognition_quality_fast'),
         ]
+        return values[:2] if sys.platform == 'darwin' else values
 
     def _recognition_quality_from_label(self, label: str) -> str:
         return {
             T('recognition_quality_auto'): 'auto',
+            T('recognition_quality_parakeet'): 'parakeet',
             T('recognition_quality_quality'): 'quality',
             T('recognition_quality_balanced'): 'balanced',
             T('recognition_quality_fast'): 'fast',

@@ -354,6 +354,24 @@ def test_both_quality_selectors_persist_to_shared_config(monkeypatch):
     assert smalltool._recognition_quality_var.value == 'Fast'
 
 
+def test_both_apps_offer_parakeet_and_round_trip_its_localized_selection(monkeypatch):
+    saved = []
+    monkeypatch.setattr(gui_modern.config, 'set_recognition_quality',
+                        lambda value: saved.append(value) or value)
+    for language in locales.STRINGS:
+        locales.set_lang(language)
+        for app_class in (gui_modern.ModernApp, jable_smalltool.SmallToolApp):
+            app = app_class.__new__(app_class)
+            label = app._recognition_quality_label('parakeet')
+            app._recognition_quality_var = types.SimpleNamespace(
+                set=lambda value: saved.append(value))
+            assert label in app._recognition_quality_values()
+            assert app._recognition_quality_from_label(label) == 'parakeet'
+            app._on_recognition_quality_change(label)
+            assert saved[-2:] == ['parakeet', label]
+    locales.set_lang('en')
+
+
 def test_modern_concurrency_is_editable_persisted_and_clamped(monkeypatch):
     assert gui_modern.MAX_CONCURRENT == 32
     init_source = inspect.getsource(gui_modern.ModernApp.__init__)

@@ -17,6 +17,10 @@ FONTS = {
 
 STRINGS = {
     'zh': {
+        'player_open': '開啟本機影片',
+        'player_play': '播放',
+        'player_failed': '無法播放影片',
+        'player_missing': '找不到已下載的影片，請使用「開啟本機影片」選擇檔案。',
         # Header
         'app_brand_1': 'UAV Browser',
         'app_brand_2': '互動式多站下載器',
@@ -336,10 +340,11 @@ STRINGS = {
         'subtitle_all': '日文＋英文＋繁中',
         'recognition_quality_setting': '辨識品質',
         'recognition_quality_auto': '自動（建議）',
+        'recognition_quality_parakeet': 'Parakeet（日語）',
         'recognition_quality_quality': '精準',
         'recognition_quality_balanced': '平衡',
         'recognition_quality_fast': '快速',
-        'recognition_quality_desc': '自動 ReazonSpeech／約 178 MB，CPU 高效率且不需獨顯 · 精準 large-v3-turbo q5／約 574 MB · 平衡 small q5／約 190 MB · 快速 base q5／約 60 MB。模型僅在第一次實際使用時下載；自動模式只在執行失敗或輸出結構無效時改用平衡模式，屆時才會另下載平衡模型。',
+        'recognition_quality_desc': 'Parakeet 日語 CTC INT8／約 656 MB，另共用約 186 MB 的 ReazonSpeech 執行套件；執行失敗或輸出無效時改用平衡模式 · 自動 ReazonSpeech／約 178 MB，CPU 高效率且不需獨顯 · 精準 large-v3-turbo q5／約 574 MB · 平衡 small q5／約 190 MB · 快速 base q5／約 60 MB。模型僅在第一次實際使用時下載；自動模式只在執行失敗或輸出結構無效時改用平衡模式，屆時才會另下載平衡模型。',
         'translation_provider_setting': '翻譯來源',
         'translation_provider_configure': '設定',
         'translation_provider_hint': '預設本機翻譯；另約 147 MB，只有翻譯字幕才下載。亦可使用自己的 LLM API。',
@@ -411,6 +416,10 @@ STRINGS = {
         'jable_lang': '',
     },
     'en': {
+        'player_open': 'Open local videos',
+        'player_play': 'Play',
+        'player_failed': 'Unable to play video',
+        'player_missing': 'Downloaded video not found. Use Open local videos to select the file.',
         # Header
         'app_brand_1': 'UAV Browser',
         'app_brand_2': 'Interactive Multi-Site Downloader',
@@ -731,10 +740,11 @@ STRINGS = {
         'subtitle_all': 'Japanese + English + Chinese',
         'recognition_quality_setting': 'Recognition quality',
         'recognition_quality_auto': 'Auto (recommended)',
+        'recognition_quality_parakeet': 'Parakeet (Japanese)',
         'recognition_quality_quality': 'Accurate',
         'recognition_quality_balanced': 'Balanced',
         'recognition_quality_fast': 'Fast',
-        'recognition_quality_desc': 'Auto ReazonSpeech / ~178 MB, CPU-efficient with no discrete GPU required · Accurate large-v3-turbo q5 / ~574 MB · Balanced small q5 / ~190 MB · Fast base q5 / ~60 MB. Models download only on first use; Auto downloads and uses Balanced only after an execution failure or invalid output structure.',
+        'recognition_quality_desc': 'Parakeet Japanese CTC INT8 / ~656 MB, plus the shared ~186 MB ReazonSpeech runtime pack; falls back to Balanced on execution failure or invalid output · Auto ReazonSpeech / ~178 MB, CPU-efficient with no discrete GPU required · Accurate large-v3-turbo q5 / ~574 MB · Balanced small q5 / ~190 MB · Fast base q5 / ~60 MB. Models download only on first use; Auto downloads and uses Balanced only after an execution failure or invalid output structure.',
         'translation_provider_setting': 'Translation source',
         'translation_provider_configure': 'Configure',
         'translation_provider_hint': 'Local by default; its separate ~147 MB model downloads only for translated subtitles. Or use your own LLM API.',
@@ -806,6 +816,10 @@ STRINGS = {
         'jable_lang': 'en',
     },
     'zh-Hans': {
+        'player_open': '打开本机视频',
+        'player_play': '播放',
+        'player_failed': '无法播放视频',
+        'player_missing': '找不到已下载的视频，请使用「打开本机视频」选择文件。',
         # Header
         'app_brand_1': 'UAV Browser',
         'app_brand_2': '交互式多站下载器',
@@ -1125,10 +1139,11 @@ STRINGS = {
         'subtitle_all': '日文＋英文＋繁中',
         'recognition_quality_setting': '识别质量',
         'recognition_quality_auto': '自动（推荐）',
+        'recognition_quality_parakeet': 'Parakeet（日语）',
         'recognition_quality_quality': '精准',
         'recognition_quality_balanced': '平衡',
         'recognition_quality_fast': '快速',
-        'recognition_quality_desc': '自动 ReazonSpeech／约 178 MB，CPU 高效且无需独显 · 精准 large-v3-turbo q5／约 574 MB · 平衡 small q5／约 190 MB · 快速 base q5／约 60 MB。模型仅在第一次实际使用时下载；自动模式只在执行失败或输出结构无效时改用平衡模式，届时才会另行下载平衡模型。',
+        'recognition_quality_desc': 'Parakeet 日语 CTC INT8／约 656 MB，另共用约 186 MB 的 ReazonSpeech 运行包；执行失败或输出无效时改用平衡模式 · 自动 ReazonSpeech／约 178 MB，CPU 高效且无需独显 · 精准 large-v3-turbo q5／约 574 MB · 平衡 small q5／约 190 MB · 快速 base q5／约 60 MB。模型仅在第一次实际使用时下载；自动模式只在执行失败或输出结构无效时改用平衡模式，届时才会另行下载平衡模型。',
         'translation_provider_setting': '翻译来源',
         'translation_provider_configure': '设置',
         'translation_provider_hint': '默认本机翻译；另约 147 MB，仅在翻译字幕时下载。也可使用自己的 LLM API。',
@@ -1200,6 +1215,10 @@ STRINGS = {
         'jable_lang': '',
     },
     'ja': {
+        'player_open': 'ローカル動画を開く',
+        'player_play': '再生',
+        'player_failed': '動画を再生できません',
+        'player_missing': 'ダウンロード済み動画が見つかりません。ローカル動画を開いて選択してください。',
         # Header
         'app_brand_1': 'UAV Browser',
         'app_brand_2': '対話型マルチサイトダウンローダー',
@@ -1520,10 +1539,11 @@ STRINGS = {
         'subtitle_all': '日本語＋英語＋繁体字中国語',
         'recognition_quality_setting': '認識品質',
         'recognition_quality_auto': '自動（推奨）',
+        'recognition_quality_parakeet': 'Parakeet（日本語）',
         'recognition_quality_quality': '高精度',
         'recognition_quality_balanced': 'バランス',
         'recognition_quality_fast': '高速',
-        'recognition_quality_desc': '自動 ReazonSpeech／約 178 MB、CPU に最適化され専用 GPU は不要 · 高精度 large-v3-turbo q5／約 574 MB · バランス small q5／約 190 MB · 高速 base q5／約 60 MB。モデルは初回利用時だけ取得し、自動は実行失敗または出力構造が無効な場合のみバランスを追加取得して切り替えます。',
+        'recognition_quality_desc': 'Parakeet 日本語 CTC INT8／約 656 MB、共通の ReazonSpeech 実行パック約 186 MB も使用。実行失敗または出力が無効な場合はバランスに切替 · 自動 ReazonSpeech／約 178 MB、CPU に最適化され専用 GPU は不要 · 高精度 large-v3-turbo q5／約 574 MB · バランス small q5／約 190 MB · 高速 base q5／約 60 MB。モデルは初回利用時だけ取得し、自動は実行失敗または出力構造が無効な場合のみバランスを追加取得して切り替えます。',
         'translation_provider_setting': '翻訳元',
         'translation_provider_configure': '設定',
         'translation_provider_hint': '既定はローカル翻訳。別の約 147 MB は翻訳字幕時だけ取得します。任意の LLM API も利用できます。',
@@ -1821,6 +1841,19 @@ STATE_LABELS = {
     '網址錯誤': {'en': 'Bad URL', 'th': 'URL ไม่ถูกต้อง', 'zh': '網址錯誤', 'zh-Hans': '网址错误', 'ja': 'URLエラー'},
     '封鎖/解析失敗': {'en': 'Blocked', 'th': 'ถูกบล็อก/อ่านไม่ได้', 'zh': '封鎖或解析失敗', 'zh-Hans': '封锁或解析失败', 'ja': 'ブロック'},
 }
+
+# macOS runs sherpa-onnx directly; Whisper profiles remain Windows-only.
+import sys as _sys
+if _sys.platform == 'darwin':
+    for _language, _description in {
+        'zh': '自動：ReazonSpeech，約 186 MB；Parakeet 日語：CTC INT8，約 656 MB。皆在本機 CPU 辨識，模型首次使用才下載。Parakeet 執行失敗或輸出無效時改用 ReazonSpeech。',
+        'en': 'Auto: ReazonSpeech, ~186 MB. Parakeet Japanese: CTC INT8, ~656 MB. Both run locally on CPU; models download on first use. Parakeet falls back to ReazonSpeech on execution failure or invalid output.',
+        'zh-Hans': '自动：ReazonSpeech，约 186 MB；Parakeet 日语：CTC INT8，约 656 MB。均在本机 CPU 识别，模型首次使用才下载。Parakeet 执行失败或输出无效时改用 ReazonSpeech。',
+        'ja': '自動：ReazonSpeech、約 186 MB。Parakeet 日本語：CTC INT8、約 656 MB。いずれもローカル CPU で認識し、初回利用時のみ取得。Parakeet の実行失敗や無効な出力では ReazonSpeech に切り替えます。',
+    }.items():
+        STRINGS[_language]['recognition_quality_desc'] = _description
+    STRINGS['th']['recognition_quality_desc'] = STRINGS['en']['recognition_quality_desc']
+
 
 # Active language - set before GUI init
 _current_lang = 'en'

@@ -107,6 +107,7 @@ def test_recognition_quality_and_no_speech_copy_is_complete():
     required = {
         'recognition_quality_setting',
         'recognition_quality_auto',
+        'recognition_quality_parakeet',
         'recognition_quality_quality',
         'recognition_quality_balanced',
         'recognition_quality_fast',
@@ -118,11 +119,13 @@ def test_recognition_quality_and_no_speech_copy_is_complete():
         strings = locales.STRINGS[lang]
         assert required <= strings.keys()
         assert 'ReazonSpeech' in strings['recognition_quality_desc']
-        assert '178' in strings['recognition_quality_desc']
-        assert 'large-v3-turbo' in strings['recognition_quality_desc']
-        assert '574' in strings['recognition_quality_desc']
-        assert '190' in strings['recognition_quality_desc']
-        assert '60' in strings['recognition_quality_desc']
+        assert 'Parakeet' in strings['recognition_quality_desc']
+        assert '656' in strings['recognition_quality_desc']
+        if sys.platform == 'darwin':
+            assert '186' in strings['recognition_quality_desc']
+        else:
+            for detail in ('178', 'large-v3-turbo', '574', '190', '60'):
+                assert detail in strings['recognition_quality_desc']
         assert '147' in strings['translation_provider_hint']
         assert '147' in strings['subtitle_desc']
 

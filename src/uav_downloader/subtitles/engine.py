@@ -2,7 +2,7 @@
 # coding: utf-8
 """Local-first subtitle generation shared by UAV Browser and UAV Watcher.
 
-Japanese speech recognition runs via the official whisper.cpp Windows build.
+Japanese speech recognition runs via pinned sherpa-onnx and whisper.cpp builds.
 English and Taiwan Traditional Chinese translation defaults to pinned,
 integrity-checked local models.  A user can instead opt in to a configured LLM
 provider, in which case only Japanese subtitle cue text is sent to that
@@ -215,6 +215,28 @@ REAZONSPEECH_CUE_MAX_SECONDS = 6.0
 REAZONSPEECH_CUE_PAUSE_SECONDS = 0.8
 REAZONSPEECH_CUE_PUNCTUATION = '。！？!?…'
 
+PARAKEET_MODEL_NAME = 'sherpa-onnx-nemo-parakeet-tdt_ctc-0.6b-ja-35000-int8'
+PARAKEET_MODEL_REVISION = 'bef18eb066808c90bd0f5df5be685767b0732de8'
+PARAKEET_MODEL_URL_PREFIX = (
+    f'https://huggingface.co/csukuangfj/{PARAKEET_MODEL_NAME}/resolve/'
+    f'{PARAKEET_MODEL_REVISION}/')
+PARAKEET_MODEL_FILES = {
+    'model.int8.onnx': (
+        655_542_604,
+        '3addd00ef5bd1742078389e540b77394e4a508bdf2f4c9ad1b4a76d93e76598e',
+    ),
+    'tokens.txt': (
+        28_557,
+        '732f64c53909f2620c713f4106b487d92e6f54a6915b3cd3d1dbd32f9f4f392a',
+    ),
+}
+PARAKEET_PIPELINE_VERSION = 'parakeet-ja-ctc-int8-sherpa-onnx-v1.13.4-v1'
+NATIVE_SHERPA_WORKER = os.path.join(os.path.dirname(__file__), 'native_sherpa.py')
+NATIVE_VAD_URL = (
+    'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx')
+NATIVE_VAD_SIZE = 643_854
+NATIVE_VAD_SHA256 = '9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6'
+
 RECOGNITION_PROFILES = {
     'auto': RecognitionProfile(
         'auto',
@@ -222,6 +244,11 @@ RECOGNITION_PROFILES = {
         REAZONSPEECH_PACK_SIZE,
         REAZONSPEECH_MODEL_SHA256,
         'reazonspeech',
+    ),
+    'parakeet': RecognitionProfile(
+        'parakeet', PARAKEET_MODEL_NAME,
+        sum(size for size, _sha256 in PARAKEET_MODEL_FILES.values()),
+        PARAKEET_MODEL_FILES['model.int8.onnx'][1], 'parakeet',
     ),
     'quality': RecognitionProfile(
         'quality',
@@ -1371,12 +1398,65 @@ def _prepare_reazonspeech_runtime_locked(
         return installed
 
 
+def _parakeet_model_dir() -> str:
+    return os.path.join(_cache_root(), 'asr',
+                        f'parakeet-ja-{PARAKEET_MODEL_REVISION}')
+
+
+def _verify_parakeet_model(
+        model_dir: str, cancel_check: Optional[CancelCheck]) -> str:
+    for name, (size, sha256) in PARAKEET_MODEL_FILES.items():
+        path = os.path.join(model_dir, name)
+        if (_path_has_link_component(model_dir, path)
+                or not _is_verified(path, size, sha256, cancel_check)):
+            raise SubtitleError('Parakeet model failed integrity verification')
+    return model_dir
+
+
+def _prepare_parakeet_model(
+        progress_callback: Optional[ProgressCallback],
+        cancel_check: Optional[CancelCheck]) -> str:
+    model_dir = _parakeet_model_dir()
+    with _interprocess_cache_lock('parakeet-ja', cancel_check):
+        for name, (size, sha256) in PARAKEET_MODEL_FILES.items():
+            path = os.path.join(model_dir, name)
+            if _path_has_link_component(model_dir, path):
+                raise SubtitleError('Parakeet model path is unsafe')
+            _download_verified(
+                PARAKEET_MODEL_URL_PREFIX + name, path, size, sha256,
+                'model', progress_callback, cancel_check)
+        return _verify_parakeet_model(model_dir, cancel_check)
+
+
 def _prepare_runtime(progress_callback: Optional[ProgressCallback],
                      cancel_check: Optional[CancelCheck]) -> tuple[str, str, str]:
+    if sys.platform == 'darwin':
+        return _prepare_native_runtime(progress_callback, cancel_check)
     with _interprocess_cache_lock(
             f'whisper-{WHISPER_VERSION}', cancel_check):
         return _prepare_runtime_locked(
             progress_callback, cancel_check)
+
+
+def _prepare_native_runtime(progress_callback, cancel_check) -> tuple[str, str, str]:
+    try:
+        import sherpa_onnx
+    except ImportError as exc:
+        raise SubtitleError('Install macOS support with: uv sync --extra macos') from exc
+    if sherpa_onnx.__version__ != REAZONSPEECH_RUNTIME_VERSION.lstrip('v'):
+        raise SubtitleError('Update macOS support with: uv sync --extra macos')
+    profile = recognition_profile()
+    if profile.engine == 'parakeet':
+        model = _prepare_parakeet_model(progress_callback, cancel_check)
+    elif profile.engine == 'reazonspeech':
+        model = _prepare_reazonspeech_runtime(progress_callback, cancel_check)
+    else:
+        raise SubtitleError('On macOS, choose Auto or Parakeet (Japanese) in Recognition quality')
+    with _interprocess_cache_lock('native-silero-vad', cancel_check):
+        vad = _download_verified(
+            NATIVE_VAD_URL, os.path.join(_cache_root(), 'models', 'silero-vad.onnx'),
+            NATIVE_VAD_SIZE, NATIVE_VAD_SHA256, 'model', progress_callback, cancel_check)
+    return sys.executable, model, vad
 
 
 def _prepare_whisper_model(
@@ -1447,9 +1527,12 @@ def _prepare_runtime_locked(
             raise SubtitleError('Unable to install whisper.cpp')
 
         profile = recognition_profile()
-        if profile.engine == 'reazonspeech':
+        if profile.engine in ('reazonspeech', 'parakeet'):
+            # shortcut: reuse the full ASR pack; split its runtime if download size becomes a constraint.
             model = _prepare_reazonspeech_runtime(
                 progress_callback, cancel_check)
+            if profile.engine == 'parakeet':
+                _prepare_parakeet_model(progress_callback, cancel_check)
         else:
             model = _prepare_whisper_model(
                 profile, progress_callback, cancel_check)
@@ -1928,6 +2011,15 @@ def _run_external_vad(
         '--threads', str(threads),
         '--no-prints',
     ]
+    if vad_exe == sys.executable:
+        args = [
+            sys.executable, NATIVE_SHERPA_WORKER, 'vad',
+            '--file', wav_path, '--vad-model', vad_model,
+            '--threshold', str(VAD_THRESHOLD),
+            '--minimum-speech', str(VAD_MIN_SPEECH_MS / 1000),
+            '--maximum-speech', str(VAD_MAX_SPEECH_SECONDS),
+            '--threads', str(threads),
+        ]
     creationflags = (
         getattr(subprocess, 'CREATE_NO_WINDOW', 0) if os.name == 'nt' else 0)
     process = None
@@ -2398,7 +2490,8 @@ def _reazonspeech_timeout_seconds(
 
 
 def _reazonspeech_cli_args(
-        pack_root: str, relative_wavs: Iterable[str]) -> list[str]:
+        pack_root: str, relative_wavs: Iterable[str], *,
+        ctc_model_dir: Optional[str] = None, native: bool = False) -> list[str]:
     relative_wavs = list(relative_wavs)
     if (
             not relative_wavs
@@ -2417,8 +2510,14 @@ def _reazonspeech_cli_args(
     runtime = os.path.join(
         pack_root, 'runtime', 'sherpa-onnx-offline.exe')
     model_dir = os.path.join(pack_root, 'model')
-    return [
-        runtime,
+    if native:
+        return [
+            sys.executable, NATIVE_SHERPA_WORKER, 'asr',
+            '--engine', 'parakeet' if ctc_model_dir else 'reazonspeech',
+            '--model-dir', ctc_model_dir or model_dir,
+            '--threads', str(_recognition_thread_count()), *relative_wavs,
+        ]
+    model_args = [
         '--tokens=' + os.path.join(model_dir, 'tokens.txt'),
         '--encoder=' + os.path.join(
             model_dir, 'encoder-epoch-99-avg-1.int8.onnx'),
@@ -2426,6 +2525,15 @@ def _reazonspeech_cli_args(
             model_dir, 'decoder-epoch-99-avg-1.onnx'),
         '--joiner=' + os.path.join(
             model_dir, 'joiner-epoch-99-avg-1.int8.onnx'),
+    ]
+    if ctc_model_dir is not None:
+        model_args = [
+            '--tokens=' + os.path.join(ctc_model_dir, 'tokens.txt'),
+            '--nemo-ctc-model=' + os.path.join(ctc_model_dir, 'model.int8.onnx'),
+        ]
+    return [
+        runtime,
+        *model_args,
         '--num-threads=' + str(_recognition_thread_count()),
         '--decoding-method=greedy_search',
         '--provider=cpu',
@@ -2490,8 +2598,11 @@ def _run_reazonspeech_cli_batch(
         total_windows: Optional[int] = None,
         batch_audio_seconds: Optional[float] = None,
         progress_callback: Optional[ProgressCallback] = None,
+        ctc_model_dir: Optional[str] = None,
+        native: bool = False,
 ) -> list[dict]:
-    args = _reazonspeech_cli_args(pack_root, relative_wavs)
+    args = _reazonspeech_cli_args(
+        pack_root, relative_wavs, ctc_model_dir=ctc_model_dir, native=native)
     stdout_path = os.path.join(
         work_dir, f'reazon-batch-{batch_index:05d}.stdout.jsonl')
     stderr_path = os.path.join(
@@ -2600,7 +2711,7 @@ def _valid_reazonspeech_string(value, maximum: int) -> bool:
 
 def _parse_reazonspeech_payload(
         root: dict, window: SpeechIsland,
-        window_duration: float) -> list[RecognizedSegment]:
+        window_duration: float, *, ctc: bool = False) -> list[RecognizedSegment]:
     expected_keys = {
         'lang', 'emotion', 'event', 'text', 'timestamps', 'durations',
         'tokens', 'ys_log_probs', 'words',
@@ -2636,7 +2747,7 @@ def _parse_reazonspeech_payload(
             or not isinstance(words, list)
             or len(tokens) > REAZONSPEECH_MAX_TOKENS_PER_WINDOW
             or len(timestamps) != len(tokens)
-            or len(log_probs) != len(tokens)
+            or len(log_probs) not in ((0, len(tokens)) if ctc else (len(tokens),))
             or len(durations) not in (0, len(tokens))
             or len(words) > REAZONSPEECH_MAX_TOKENS_PER_WINDOW):
         raise ReazonSpeechStructuralError(
@@ -2654,7 +2765,8 @@ def _parse_reazonspeech_payload(
             for token in tokens):
         raise ReazonSpeechStructuralError(
             'ReazonSpeech returned an invalid response')
-    if ''.join(tokens) != text:
+    token_text = ''.join(tokens)
+    if (token_text.lstrip(' ') if ctc else token_text) != text:
         raise ReazonSpeechStructuralError(
             'ReazonSpeech token text did not match its transcript')
     if not text:
@@ -2695,6 +2807,20 @@ def _parse_reazonspeech_payload(
             for value in durations):
         raise ReazonSpeechStructuralError(
             'ReazonSpeech returned invalid token durations')
+
+    if ctc and token_text != text:
+        # sherpa strips leading spaces from CTC text but keeps them in tokens.
+        remaining = len(token_text) - len(text)
+        trimmed_tokens = []
+        trimmed_timestamps = []
+        for token, timestamp in zip(tokens, checked_timestamps):
+            removed = min(remaining, len(token))
+            remaining -= removed
+            if token[removed:]:
+                trimmed_tokens.append(token[removed:])
+                trimmed_timestamps.append(timestamp)
+        tokens = trimmed_tokens
+        checked_timestamps = trimmed_timestamps
 
     recognized: list[RecognizedSegment] = []
     group_start = 0
@@ -2773,17 +2899,29 @@ def _run_reazonspeech(
         cancel_check: Optional[CancelCheck],
         progress_callback: Optional[ProgressCallback] = None,
         outcome_callback: Optional[RecognitionOutcomeCallback] = None,
+        *, profile: Optional[RecognitionProfile] = None,
 ) -> Optional[str]:
     del log_path
+    profile = profile or RECOGNITION_PROFILES['auto']
+    ctc = profile.engine == 'parakeet'
+    native = whisper_exe == sys.executable
+    batch_options = {}
+    if native:
+        batch_options['native'] = True
+    if ctc:
+        batch_options['ctc_model_dir'] = _verify_parakeet_model(
+            pack_root if native else _parakeet_model_dir(), cancel_check)
     runtime_dir = os.path.dirname(os.path.abspath(whisper_exe))
     vad_exe = os.path.join(
         runtime_dir, 'whisper-vad-speech-segments.exe')
-    if (
+    if native:
+        vad_exe = sys.executable
+    if not native and (
             not os.path.isfile(whisper_exe)
             or not os.path.isfile(vad_exe)):
         raise _asr_failure('runtime')
-    _verify_reazonspeech_install(
-        pack_root, cancel_check=cancel_check)
+    if not (native and ctc):
+        _verify_reazonspeech_install(pack_root, cancel_check=cancel_check)
 
     try:
         work_dir = tempfile.mkdtemp(
@@ -2868,7 +3006,8 @@ def _run_reazonspeech(
                     total_windows=len(relative_wavs),
                     batch_audio_seconds=sum(
                         window_durations[batch_start:batch_end]),
-                    progress_callback=progress_callback)
+                    progress_callback=progress_callback,
+                    **batch_options)
                 if len(payloads) != len(batch_names):
                     raise ReazonSpeechStructuralError(
                         'ReazonSpeech returned the wrong result count')
@@ -2878,6 +3017,7 @@ def _run_reazonspeech(
                         payload,
                         windows[window_index],
                         window_durations[window_index],
+                        ctc=ctc,
                     )
                     if not cues:
                         raise ReazonSpeechStructuralError(
@@ -2892,6 +3032,18 @@ def _run_reazonspeech(
                     'Speech was detected but no valid subtitle cues '
                     'were produced')
         except ReazonSpeechStructuralError:
+            if native:
+                if not ctc:
+                    raise
+                fallback_pack = _prepare_reazonspeech_runtime(
+                    progress_callback, cancel_check)
+                result = _run_reazonspeech(
+                    whisper_exe, fallback_pack, vad_model, wav_path,
+                    output_base, '', cancel_check, progress_callback,
+                    profile=RECOGNITION_PROFILES['auto'])
+                if outcome_callback:
+                    outcome_callback(RECOGNITION_PROFILES['auto'], True)
+                return result
             fallback_model = _prepare_whisper_fallback_model(
                 progress_callback, cancel_check)
             result = _run_whisper(
@@ -2919,7 +3071,7 @@ def _run_reazonspeech(
             raise _asr_failure('runtime') from exc
         _notify(progress_callback, 'transcribe_ja', 100)
         if outcome_callback:
-            outcome_callback(RECOGNITION_PROFILES['auto'], False)
+            outcome_callback(profile, False)
         return result
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
@@ -2933,12 +3085,12 @@ def _run_recognition(
         progress_callback: Optional[ProgressCallback] = None,
         outcome_callback: Optional[RecognitionOutcomeCallback] = None,
 ) -> Optional[str]:
-    if profile.engine == 'reazonspeech':
+    if profile.engine in ('reazonspeech', 'parakeet'):
         return _run_reazonspeech(
             exe, model, vad_model, wav_path, output_base,
             log_path, cancel_check,
             progress_callback=progress_callback,
-            outcome_callback=outcome_callback)
+            outcome_callback=outcome_callback, profile=profile)
     result = _run_whisper(
         exe, model, vad_model, wav_path, output_base,
         log_path, cancel_check,
@@ -4310,7 +4462,7 @@ def run_whisper_diagnostic(
         actual_engine = actual_profile.engine
         actual_runtime_version = (
             REAZONSPEECH_RUNTIME_VERSION
-            if actual_engine == 'reazonspeech'
+            if actual_engine in ('reazonspeech', 'parakeet')
             else WHISPER_VERSION)
         actual_model_sha256 = actual_profile.model_sha256
         fallback_used = bool(execution.get('fallback_used'))
@@ -4327,7 +4479,7 @@ def run_whisper_diagnostic(
         'frozen': bool(getattr(sys, 'frozen', False)),
         'runtime_version': (
             REAZONSPEECH_RUNTIME_VERSION
-            if profile.engine == 'reazonspeech'
+            if profile.engine in ('reazonspeech', 'parakeet')
             else WHISPER_VERSION),
         'profile': profile.key,
         'model_sha256': profile.model_sha256,
@@ -4665,9 +4817,9 @@ def _asr_signature(profile: RecognitionProfile) -> str:
     cli_sha256 = WHISPER_RUNTIME_FILES['Release/whisper-cli.exe'][1]
     vad_helper_sha256 = WHISPER_RUNTIME_FILES[
         'Release/whisper-vad-speech-segments.exe'][1]
-    if profile.engine == 'reazonspeech':
+    if profile.engine in ('reazonspeech', 'parakeet'):
         fallback = RECOGNITION_PROFILES['balanced']
-        return _stable_signature({
+        identity = {
             'pipeline': REAZONSPEECH_PIPELINE_VERSION,
             'runtime': {
                 'version': REAZONSPEECH_RUNTIME_VERSION,
@@ -4729,7 +4881,27 @@ def _asr_signature(profile: RecognitionProfile) -> str:
                 'sha256': fallback.model_sha256,
                 'cli_sha256': cli_sha256,
             },
-        })
+        }
+        if profile.engine == 'parakeet':
+            identity['pipeline'] = PARAKEET_PIPELINE_VERSION
+            identity['model']['revision'] = PARAKEET_MODEL_REVISION
+            identity['model']['files'] = PARAKEET_MODEL_FILES
+            identity['decoder']['model_type'] = 'nemo_ctc'
+        if sys.platform == 'darwin':
+            identity['native_worker'] = 'sherpa-onnx-python-v1'
+            identity['vad'] = {
+                'model_sha256': NATIVE_VAD_SHA256,
+                'threshold': VAD_THRESHOLD,
+                'minimum_speech_ms': VAD_MIN_SPEECH_MS,
+                'maximum_speech_seconds': VAD_MAX_SPEECH_SECONDS,
+                'minimum_silence_seconds': 0.3,
+                'window_samples': 512,
+                'merge_gap_seconds': VAD_MERGE_GAP_SECONDS,
+            }
+            identity['structural_fallback'] = (
+                {'engine': 'reazonspeech', 'signature': _asr_signature(RECOGNITION_PROFILES['auto'])}
+                if profile.engine == 'parakeet' else None)
+        return _stable_signature(identity)
     return _stable_signature({
         'pipeline': ASR_PIPELINE_VERSION,
         'runtime': {

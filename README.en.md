@@ -72,6 +72,16 @@ If you are unsure, start with **UAV Browser**. Both Windows executables are port
 
 Learn more: [UAV Browser](./docs/uav-browser.md) · [UAV Watcher unattended automation](./docs/uav-watcher.md) · [AI subtitles](./docs/ai-subtitles.md) · [Docker / CLI](./docs/docker-cli.md) · [migrate to UAV](./docs/migration-to-uav.md)
 
+## macOS: downloading, subtitles, and playback
+
+The source version includes `UAV Browser.command` and `UAV Watcher.command`
+launchers using uv-managed Python 3.12, native Parakeet Japanese recognition,
+and local Japanese/English/Traditional Chinese subtitles. Browser's Play and
+Open local videos buttons use upstream [mpv](https://github.com/mpv-player/mpv)
+in an independent playback window with hardware decoding and subtitle tracks.
+`UAV Player.command` also opens videos independently.
+See [macOS setup and playback](docs/macos.md).
+
 ## Windows: start in 30 seconds
 
 1. Download [UAV_Browser.exe](https://github.com/Alos21750/UAV-Downloader/releases/latest/download/UAV_Browser.exe) or [UAV_Watcher.exe](https://github.com/Alos21750/UAV-Downloader/releases/latest/download/UAV_Watcher.exe).

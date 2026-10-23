@@ -53,6 +53,7 @@ from uav_downloader.ui.translation_settings import (
     translation_provider_summary,
 )
 from uav_downloader.ui.preview import open_video_preview
+from uav_downloader.ui.player import launch_player, downloaded_video_path
 from uav_downloader.core.video_identity import (
     normalize_source_subtitle_evidence,
     trusted_chinese_subtitle_evidence,
@@ -2097,16 +2098,19 @@ class ModernApp(ctk.CTk):
         }.get(config.get_subtitle_pref(), T('subtitle_none'))
 
     def _recognition_quality_values(self):
-        return [
+        values = [
             T('recognition_quality_auto'),
+            T('recognition_quality_parakeet'),
             T('recognition_quality_quality'),
             T('recognition_quality_balanced'),
             T('recognition_quality_fast'),
         ]
+        return values[:2] if sys.platform == 'darwin' else values
 
     def _recognition_quality_from_label(self, label):
         return normalize_recognition_quality({
             T('recognition_quality_auto'): 'auto',
+            T('recognition_quality_parakeet'): 'parakeet',
             T('recognition_quality_quality'): 'quality',
             T('recognition_quality_balanced'): 'balanced',
             T('recognition_quality_fast'): 'fast',
@@ -2118,6 +2122,7 @@ class ModernApp(ctk.CTk):
             if quality is None else quality)
         return {
             'auto': T('recognition_quality_auto'),
+            'parakeet': T('recognition_quality_parakeet'),
             'quality': T('recognition_quality_quality'),
             'balanced': T('recognition_quality_balanced'),
             'fast': T('recognition_quality_fast'),
@@ -2585,6 +2590,12 @@ class ModernApp(ctk.CTk):
                       fg_color='transparent', border_width=1, border_color=BORDER_HOVER,
                       hover_color=BG_CARD_HOVER, text_color=TEXT_PRI,
                       command=self._subtitle_local_files).pack(side='left')
+        ctk.CTkButton(
+            local_actions, text=T('player_open'), width=126, height=38,
+            corner_radius=CONTROL_RADIUS, fg_color='transparent',
+            border_width=1, border_color=BORDER_HOVER,
+            hover_color=BG_CARD_HOVER, text_color=TEXT_PRI,
+            command=self._play_local_files).pack(side='left', padx=(8, 0))
         ctk.CTkButton(
             local_actions, text=T('import_urls'), width=112, height=38,
             corner_radius=CONTROL_RADIUS, fg_color='transparent',
@@ -4829,6 +4840,29 @@ class ModernApp(ctk.CTk):
         except (OSError, ValueError, TypeError) as exc:
             messagebox.showerror(T('export_failed'), str(exc))
 
+    def _play_local_files(self):
+        paths = filedialog.askopenfilenames(
+            title=T('player_open'), initialdir=self._dest_var.get() or 'download',
+            filetypes=[(T('subtitle_local_video_filter'),
+                        '*.mp4 *.mkv *.ts *.mov *.m4v *.webm *.avi *.m2ts')])
+        if paths:
+            self._play_videos(paths)
+
+    def _play_videos(self, paths):
+        try:
+            launch_player(paths, on_error=lambda error: self._ui(
+                lambda: messagebox.showerror(T('player_failed'), error)))
+        except (OSError, ValueError) as exc:
+            messagebox.showerror(T('player_failed'), str(exc))
+
+    def _play_download(self, url):
+        item = next((item for item in self._dlmgr.get_items() if item.url == url), None)
+        path = downloaded_video_path(item) if item else None
+        if path:
+            self._play_videos([path])
+        else:
+            messagebox.showerror(T('player_failed'), T('player_missing'))
+
     def _subtitle_local_files(self):
         """Generate subtitles for videos that are already on disk."""
         mode = normalize_subtitle_mode(config.get_subtitle_pref())
@@ -5436,6 +5470,14 @@ class ModernApp(ctk.CTk):
                 command=lambda u=item.url: self._open_item_folder(u))
             folder_btn.pack(side='right', padx=(2, 0))
 
+            play_btn = ctk.CTkButton(
+                row, text=T('player_play'), width=64, height=32,
+                corner_radius=CONTROL_RADIUS, fg_color='transparent',
+                border_width=1, border_color=BORDER_HOVER,
+                hover_color=BG_CARD_HOVER, text_color=ACCENT,
+                command=lambda u=item.url: self._play_download(u))
+            play_btn.pack(side='right', padx=(2, 0))
+
             retry_btn = ctk.CTkButton(
                 row, text='', width=82, height=32,
                 corner_radius=CONTROL_RADIUS,
@@ -5481,6 +5523,7 @@ class ModernApp(ctk.CTk):
                 'pb': pb, 'pct_lbl': pct_lbl, 'spd_lbl': spd_lbl,
                 'retry_btn': retry_btn, '_before_remove': remove_btn,
                 'folder_btn': folder_btn,
+                'play_btn': play_btn,
                 'thumb_lbl': thumb_lbl,
                 'pb_visible': False, 'pct_visible': False, 'spd_visible': False,
                 'retry_visible': False,
@@ -5501,6 +5544,9 @@ class ModernApp(ctk.CTk):
 
     def _update_dl_row(self, w: dict, item: DownloadItem):
         """Update an existing row's fields in place without rebuilding widgets."""
+        if 'play_btn' in w:
+            w['play_btn'].configure(state=(
+                'normal' if item.state in DONE_STATES or item.local else 'disabled'))
         if item.thumbnail and w['last_thumbnail'] != item.thumbnail:
             w['last_thumbnail'] = item.thumbnail
             self._load_download_thumb_async(

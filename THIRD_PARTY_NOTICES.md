@@ -41,6 +41,35 @@ source archive. Its components remain subject to their respective licenses and
 model-card terms. UAV Downloader fetches the fixed v3.1.0 component on demand;
 the same immutable pack is not duplicated in each application release.
 
+## Optional Parakeet Japanese recognition model
+
+The Parakeet selection uses NVIDIA NeMo's
+[`nvidia/parakeet-tdt_ctc-0.6b-ja`](https://huggingface.co/nvidia/parakeet-tdt_ctc-0.6b-ja),
+licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Credit: NVIDIA NeMo team. The model was trained on ReazonSpeech v2.0.
+This project uses the INT8 ONNX CTC conversion published by sherpa-onnx
+maintainer Fangjun Kuang; it does not train or fine-tune the model.
+
+Immutable converted source:
+<https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt_ctc-0.6b-ja-35000-int8/tree/bef18eb066808c90bd0f5df5be685767b0732de8>.
+The application downloads only `model.int8.onnx` and `tokens.txt`, with pinned
+size and SHA-256 checks for both files. The CPU runtime is reused from the
+ReazonSpeech pack described above and retains its separate licenses.
+
+## macOS speech runtime and local player
+
+The macOS extra uses native `sherpa-onnx` and `sherpa-onnx-core` 1.13.4 wheels.
+They retain sherpa-onnx's Apache-2.0 license and ONNX Runtime's MIT license.
+The native speech detector uses the Silero VAD model distributed by
+[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models),
+verified by exact size and SHA-256. Silero VAD is licensed under
+[MIT](https://github.com/snakers4/silero-vad/blob/master/LICENSE).
+
+UAV Player launches separately installed [mpv](https://github.com/mpv-player/mpv)
+as a subprocess; this project does not modify or redistribute its binaries.
+mpv and its dependencies retain their own licenses (mpv's upstream default
+is GPL-2.0-or-later; see its LICENSE files for LGPL build options).
+
 ## Optional local subtitle-translation model pack
 
 The optional `UAV_local_translation_v1.zip` archive contains converted,

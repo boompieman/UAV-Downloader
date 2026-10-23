@@ -69,6 +69,14 @@
 
 深入了解：[UAV Browser](./docs/uav-browser.md) · [UAV Watcher 無人值守流程](./docs/uav-watcher.md) · [AI 字幕](./docs/ai-subtitles.md) · [Docker / CLI](./docs/docker-cli.md) · [升級至 UAV](./docs/migration-to-uav.md)
 
+## macOS：下載、字幕與播放
+
+Mac 原始碼版本可雙擊 `UAV Browser.command`、`UAV Watcher.command` 啟動，
+使用 uv 管理的 Python 3.12。支援本機 Parakeet 日語辨識與日／英／繁中字幕。
+下載分頁的「播放」與「開啟本機影片」整合 [mpv](https://github.com/mpv-player/mpv)，
+提供獨立播放視窗、硬體解碼與字幕切換；也可單獨啟動 `UAV Player.command`。
+首次安裝與操作請見 [macOS 說明](docs/macos.md)。
+
 ## Windows：30 秒開始
 
 1. 下載 [UAV_Browser.exe](https://github.com/Alos21750/UAV-Downloader/releases/latest/download/UAV_Browser.exe) 或 [UAV_Watcher.exe](https://github.com/Alos21750/UAV-Downloader/releases/latest/download/UAV_Watcher.exe)。

@@ -25,7 +25,27 @@ sherpa-onnx. It is optimized for ordinary CPUs and does not require a discrete
 GPU. The SHA-256-verified recognition pack is downloaded only when subtitles
 are first requested.
 
-Explicit whisper.cpp profiles remain available:
+Browser and Watcher also offer **Parakeet (Japanese)** in Settings →
+Recognition quality. This uses NVIDIA's `parakeet-tdt_ctc-0.6b-ja`, converted
+to INT8 ONNX by sherpa-onnx, with its CTC decoder on CPU. The model and tokens
+are about 656 MB and download only when selected. They are pinned to revision
+`bef18eb066808c90bd0f5df5be685767b0732de8` and checked by size and SHA-256.
+On Windows it reuses the existing ReazonSpeech runtime pack (about 186 MB,
+downloaded once if absent) and whisper.cpp's Silero VAD. On macOS it runs
+through pinned native `sherpa-onnx` / `sherpa-onnx-core` 1.13.4 Python wheels
+and a SHA-256-checked Silero ONNX VAD; Parakeet does not download Windows
+runtime packs. Audio stays local, and Japanese cues feed the same
+English/Traditional Chinese translation pipeline. Execution failures or
+invalid recognition output trigger Balanced Whisper on Windows and native
+ReazonSpeech on macOS. Integrity failures, cancellation, and storage errors
+stop the job. Automatic remains the default; macOS offers Auto and Parakeet
+in the quality selector. See [macOS setup and playback](./macos.md).
+
+This is the [Japanese Parakeet model](https://huggingface.co/nvidia/parakeet-tdt_ctc-0.6b-ja)
+using the [sherpa-onnx CTC conversion](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/offline-ctc/nemo/japanese.html).
+It does not use the TDT decoder.
+
+Explicit whisper.cpp profiles remain available on Windows:
 
 - Accurate: large-v3-turbo q5, about 574 MB.
 - Balanced: small q5, about 190 MB.

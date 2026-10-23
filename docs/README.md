@@ -4,13 +4,14 @@ UAV Downloader provides three public workflows over one download
 core:
 
 - [UAV Browser](./uav-browser.md) — interactive discovery, search, queues, and
-  downloads on Windows.
+  downloads on Windows and macOS.
 - [UAV Watcher](./uav-watcher.md) — scheduled, unattended discovery and download
   of new releases.
 - [UAV Downloader CLI](./docker-cli.md) — Docker, NAS, and command-line downloads.
 
 Supporting references:
 
+- [macOS setup and mpv playback](./macos.md)
 - [AI subtitles](./ai-subtitles.md)
 - [Architecture and source layout](./architecture.md)
 - [Migrating to UAV Downloader](./migration-to-uav.md)
