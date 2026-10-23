@@ -58,6 +58,9 @@ macos = [
     "sherpa-onnx==1.13.4 ; sys_platform == 'darwin'",
     "sherpa-onnx-core==1.13.4 ; sys_platform == 'darwin'",
 ]
+macos-build = [
+    "pyinstaller==6.22.3",
+]
 
 [project.urls]
 Homepage = "https://github.com/Alos21750/UAV-Downloader"

@@ -74,7 +74,9 @@ Learn more: [UAV Browser](./docs/uav-browser.md) · [UAV Watcher unattended auto
 
 ## macOS: downloading, subtitles, and playback
 
-The source version includes `UAV Browser.command` and `UAV Watcher.command`
+A self-contained `UAV Downloader.app` build includes Python, subtitle models,
+ffmpeg and mpv; runtime use requires no uv, Homebrew or source checkout.
+The source version also includes `UAV Browser.command` and `UAV Watcher.command`
 launchers using uv-managed Python 3.12, native Parakeet Japanese recognition,
 and local Japanese/English/Traditional Chinese subtitles. Browser's Play and
 Open local videos buttons use upstream [mpv](https://github.com/mpv-player/mpv)
@@ -185,7 +187,7 @@ uav-browser --nogui --url "https://jable.tv/videos/example/" --output "/path/to/
 `./download`. `--max-workers-per-video` accepts 1–16 and can be lowered to
 reduce proxy load.
 
-On Linux, install `python3-tk` with your system package manager if Tk is not already available. macOS and Linux run from source; the portable EXE release is for Windows.
+On Linux, install `python3-tk` with your system package manager if Tk is not already available. See [macOS setup](docs/macos.md) for the standalone `.app` build; the portable EXE release is for Windows.
 
 ## Docker / NAS
 

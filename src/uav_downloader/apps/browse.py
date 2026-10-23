@@ -1918,7 +1918,7 @@ class ModernApp(ctk.CTk):
         info = self._update_info
         if self._is_closing or self._update_installing or not info:
             return
-        if not updater.is_frozen():
+        if not updater.is_frozen() or sys.platform == 'darwin':
             try:
                 webbrowser.open(info.get('html_url') or updater.API_LATEST)
             except Exception:

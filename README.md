@@ -71,7 +71,9 @@
 
 ## macOS：下載、字幕與播放
 
-Mac 原始碼版本可雙擊 `UAV Browser.command`、`UAV Watcher.command` 啟動，
+Mac 可打包為直接點開的 `UAV Downloader.app`，包含字幕模型、ffmpeg 與 mpv，
+執行時不需另外安裝 Python、uv 或 Homebrew。
+原始碼版本也可雙擊 `UAV Browser.command`、`UAV Watcher.command` 啟動，
 使用 uv 管理的 Python 3.12。支援本機 Parakeet 日語辨識與日／英／繁中字幕。
 下載分頁的「播放」與「開啟本機影片」整合 [mpv](https://github.com/mpv-player/mpv)，
 提供獨立播放視窗、硬體解碼與字幕切換；也可單獨啟動 `UAV Player.command`。
@@ -178,7 +180,7 @@ uav-browser --nogui --url "https://jable.tv/videos/example/" --output "/path/to/
 
 `-o` 是 `--output` 的縮寫；若省略，預設會儲存在 `./download`。`--max-workers-per-video` 接受 1–16，可在 Proxy 負載較高時調低。
 
-Linux 若未內建 Tk，請先用系統套件管理器安裝 `python3-tk`。macOS／Linux 是原始碼執行方式；Windows Release 才提供免安裝 EXE。
+Linux 若未內建 Tk，請先用系統套件管理器安裝 `python3-tk`。Mac 的獨立 `.app` 打包方式見 [macOS 說明](docs/macos.md)；Windows Release 提供免安裝 EXE。
 
 ## Docker / NAS
 

@@ -48,6 +48,11 @@ atexit.register(_disarm_faulthandler)
 
 
 def _base_dir():
+    if getattr(sys, 'frozen', False) and sys.platform == 'darwin':
+        from uav_downloader.core.paths import product_data_dir
+        folder = product_data_dir() / 'logs'
+        folder.mkdir(parents=True, exist_ok=True)
+        return str(folder)
     if getattr(sys, "frozen", False):
         base = os.path.dirname(sys.executable)
     else:

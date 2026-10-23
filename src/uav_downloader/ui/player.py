@@ -14,6 +14,10 @@ VIDEO_EXTENSIONS = frozenset({'.mp4', '.mkv', '.ts', '.mov', '.m4v', '.webm', '.
 
 
 def find_mpv() -> str:
+    if getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', None):
+        bundled = Path(sys._MEIPASS) / 'player' / 'mpv'
+        if bundled.is_file():
+            return str(bundled)
     executable = shutil.which('mpv')
     if executable:
         return executable

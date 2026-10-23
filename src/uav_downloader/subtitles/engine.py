@@ -237,6 +237,12 @@ NATIVE_VAD_URL = (
 NATIVE_VAD_SIZE = 643_854
 NATIVE_VAD_SHA256 = '9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6'
 
+
+def _native_sherpa_command() -> list[str]:
+    if getattr(sys, 'frozen', False):
+        return [sys.executable, '--uav-native-worker']
+    return [sys.executable, NATIVE_SHERPA_WORKER]
+
 RECOGNITION_PROFILES = {
     'auto': RecognitionProfile(
         'auto',
@@ -606,6 +612,8 @@ def _component_search_directories() -> tuple[str, ...]:
     candidates: list[str] = []
     if getattr(sys, 'frozen', False):
         candidates.append(os.path.dirname(os.path.abspath(sys.executable)))
+        if getattr(sys, '_MEIPASS', None):
+            candidates.append(sys._MEIPASS)
     else:
         try:
             candidates.append(os.path.dirname(os.path.abspath(sys.argv[0])))
@@ -1416,6 +1424,11 @@ def _verify_parakeet_model(
 def _prepare_parakeet_model(
         progress_callback: Optional[ProgressCallback],
         cancel_check: Optional[CancelCheck]) -> str:
+    if getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', None):
+        bundled = os.path.join(sys._MEIPASS, 'components',
+                               f'parakeet-ja-{PARAKEET_MODEL_REVISION}')
+        if os.path.isdir(bundled):
+            return _verify_parakeet_model(bundled, cancel_check)
     model_dir = _parakeet_model_dir()
     with _interprocess_cache_lock('parakeet-ja', cancel_check):
         for name, (size, sha256) in PARAKEET_MODEL_FILES.items():
@@ -1453,9 +1466,14 @@ def _prepare_native_runtime(progress_callback, cancel_check) -> tuple[str, str, 
     else:
         raise SubtitleError('On macOS, choose Auto or Parakeet (Japanese) in Recognition quality')
     with _interprocess_cache_lock('native-silero-vad', cancel_check):
-        vad = _download_verified(
-            NATIVE_VAD_URL, os.path.join(_cache_root(), 'models', 'silero-vad.onnx'),
-            NATIVE_VAD_SIZE, NATIVE_VAD_SHA256, 'model', progress_callback, cancel_check)
+        vad = os.path.join(getattr(sys, '_MEIPASS', ''), 'components', 'silero-vad.onnx')
+        if getattr(sys, 'frozen', False) and os.path.isfile(vad):
+            if not _is_verified(vad, NATIVE_VAD_SIZE, NATIVE_VAD_SHA256, cancel_check):
+                raise SubtitleError('Bundled speech detector failed integrity verification')
+        else:
+            vad = _download_verified(
+                NATIVE_VAD_URL, os.path.join(_cache_root(), 'models', 'silero-vad.onnx'),
+                NATIVE_VAD_SIZE, NATIVE_VAD_SHA256, 'model', progress_callback, cancel_check)
     return sys.executable, model, vad
 
 
@@ -2013,7 +2031,7 @@ def _run_external_vad(
     ]
     if vad_exe == sys.executable:
         args = [
-            sys.executable, NATIVE_SHERPA_WORKER, 'vad',
+            *_native_sherpa_command(), 'vad',
             '--file', wav_path, '--vad-model', vad_model,
             '--threshold', str(VAD_THRESHOLD),
             '--minimum-speech', str(VAD_MIN_SPEECH_MS / 1000),
@@ -2512,7 +2530,7 @@ def _reazonspeech_cli_args(
     model_dir = os.path.join(pack_root, 'model')
     if native:
         return [
-            sys.executable, NATIVE_SHERPA_WORKER, 'asr',
+            *_native_sherpa_command(), 'asr',
             '--engine', 'parakeet' if ctc_model_dir else 'reazonspeech',
             '--model-dir', ctc_model_dir or model_dir,
             '--threads', str(_recognition_thread_count()), *relative_wavs,

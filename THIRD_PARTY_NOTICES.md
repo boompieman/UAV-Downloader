@@ -65,10 +65,16 @@ The native speech detector uses the Silero VAD model distributed by
 verified by exact size and SHA-256. Silero VAD is licensed under
 [MIT](https://github.com/snakers4/silero-vad/blob/master/LICENSE).
 
-UAV Player launches separately installed [mpv](https://github.com/mpv-player/mpv)
-as a subprocess; this project does not modify or redistribute its binaries.
+UAV Player launches [mpv](https://github.com/mpv-player/mpv) as a subprocess.
+Source installations use a separately installed player. The self-contained
+macOS app includes mpv and its dependent native libraries, with relocated
+library paths and ad-hoc signatures. Their Homebrew versions, source download
+URLs and checksums are recorded in `third_party_licenses/homebrew-components.json`;
+the accompanying license texts are in `third_party_licenses/native`.
 mpv and its dependencies retain their own licenses (mpv's upstream default
 is GPL-2.0-or-later; see its LICENSE files for LGPL build options).
+The app also bundles the imageio-ffmpeg macOS executable (FFmpeg), Python,
+Tcl/Tk, and the subtitle runtimes and model notices described in this document.
 
 ## Optional local subtitle-translation model pack
 
