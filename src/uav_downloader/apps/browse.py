@@ -53,6 +53,7 @@ from uav_downloader.ui.translation_settings import (
     translation_provider_summary,
 )
 from uav_downloader.ui.preview import open_video_preview
+from uav_downloader.ui.scrolling import install_touchpad_scrolling
 from uav_downloader.ui.player import launch_player, downloaded_video_path
 from uav_downloader.core.video_identity import (
     normalize_source_subtitle_evidence,
@@ -1490,6 +1491,7 @@ def _fetch_thumbnail(url: str, site_key: str = '') -> Optional[Image.Image]:
 class ModernApp(ctk.CTk):
     def __init__(self, url: str = '', dest: str = 'download', lang: str = 'en'):
         super().__init__()
+        install_touchpad_scrolling(self)
         self._is_closing = False
         self._startup_complete = False
         self._close_requested = False

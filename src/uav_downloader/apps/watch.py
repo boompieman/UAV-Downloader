@@ -214,6 +214,7 @@ from uav_downloader.ui.translation_settings import (
     translation_failure_message,
     translation_provider_summary,
 )
+from uav_downloader.ui.scrolling import install_touchpad_scrolling
 
 # Keep the optional AI subtitle stack off UAV Watcher's startup path.  Frozen
 # one-file builds should be able to paint the window before importing requests,
@@ -1873,6 +1874,7 @@ class SmallToolWorker:
 class SmallToolApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        install_touchpad_scrolling(self)
         self._lang_code_by_name = {name: code for code, name in LANGUAGES}
         self._lang_name_by_code = {code: name for code, name in LANGUAGES}
         self._theme_mode = config.get_theme()
